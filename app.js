@@ -1,4 +1,5 @@
 const express = require("express");
+const bodyParser = require("body-parser");
 const app = express();
 const path = require("path");
 const uuid = require("uuid");
@@ -100,12 +101,24 @@ const campgrounds = [
 
 app.set("view engine", "ejs");
 app.use(express.static(path.join(__dirname, "public")));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.get("/", (req, res) => {
   res.render("index.ejs");
 });
 
 app.get("/campgrounds", (req, res) => {
   res.render("./campgrounds/campgrounds.ejs", { ejsCampgrounds: campgrounds });
+});
+app.get("/campgrounds/new", (req, res) => {
+  res.render("campgrounds/new-campground.ejs");
+});
+app.post("/campgrounds", (req, res) => {
+  const newCampground = { id: uuid(), ...req.body.campground };
+  if (newCampground.name === "") {
+    return res.status(400).json({ msg: "Campground can not be empty" });
+  }
+  campgrounds.unshift(newCampground);
+  res.redirect("/campgrounds");
 });
 app.get("/campgrounds/:campgroundId", (req, res) => {
   const campground = campgrounds.find(
