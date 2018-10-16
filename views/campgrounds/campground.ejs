@@ -36,6 +36,42 @@
     </div>
   </div>
   <!--END OF MODAL-->
+
+  <!-- Modal for edit campground-->
+  <div class="modal fade" id="myModal" role="dialog">
+    <div class="modal-dialog">
+
+      <div class="modal-content">
+        <div class="modal-header">
+          <h4 class="modal-title">Edit Campground</h4>
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form action="/campgrounds/<%=ejsCampground.id%>?_method=PUT" method="POST">
+            <div class="form-group">
+              <label for="#name">Name:</label>
+              <input class="form-control" type="text" value="<%=ejsCampground.name%>" name="campground[name]" id="name">
+            </div>
+            <div class="form-group">
+              <label for="#url">Image Url:</label>
+              <input class="form-control" type="text" value="<%=ejsCampground.url%>" name="campground[url]" id="url">
+            </div>
+            <div class="form-group">
+              <label for="desc">Description</label>
+              <textarea class="form-control" rows="5" name="campground[desc]"><%=ejsCampground.desc%></textarea>
+            </div>
+            <div class="form-group">
+              <button class="btn btn-block btn-primary">Submit</button>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!--END OF MODAL-->
   <div class="col-md-3">
     <ul class="list-group">
       <li class="list-group-item-action list-group-item active">Info 1</li>
@@ -68,6 +104,15 @@
         <p class="card-text">
           <%=ejsCampground.desc%>
         </p>
+        <ul class="list-group">
+          <%if( ejsCampground.comments && ejsCampground.comments.length){%>
+          <%ejsCampground.comments.map(comment => {%>
+          <li class="list-group-item">
+            <%=comment.text%>
+          </li>
+          <%})%>
+          <%}%>
+        </ul>
       </div>
     </div>
   </div>
