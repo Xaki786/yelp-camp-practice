@@ -119,6 +119,26 @@ app.post("/campgrounds/:campgroundId/comments/", (req, res) => {
     .catch(err => console.log("Campground Not Found"));
 });
 
+app.get("/campgrounds/:campgroundId/comments/:commentId/edit", (req, res) => {
+  Comment.findById(req.params.commentId)
+    .then(dbComment => {
+      res.render("comments/edit-comment.ejs", {
+        ejsComment: dbComment,
+        campgroundId: req.params.campgroundId
+      });
+    })
+    .catch(err => console.log("Comment Not found"));
+});
+
+app.put("/campgrounds/:campgroundId/comments/:commentId", (req, res) => {
+  Comment.findByIdAndUpdate(req.params.commentId, {
+    text: req.body.comment.text
+  })
+    .then(() => {
+      res.redirect("/campgrounds/" + req.params.campgroundId);
+    })
+    .catch(err => console.log("Can not update comment"));
+});
 //  SERVER STARTUP
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

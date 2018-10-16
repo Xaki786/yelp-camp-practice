@@ -108,7 +108,14 @@
           <%if( ejsCampground.comments && ejsCampground.comments.length){%>
           <%ejsCampground.comments.map(comment => {%>
           <li class="list-group-item">
-            <%=comment.text%>
+            <div class="d-flex">
+              <div class="mr-auto">
+                <%=comment.text%>
+              </div>
+              <div class="ml-2">
+                <a href="/campgrounds/<%=ejsCampground.id%>/comments/<%=comment._id%>/edit">Edit Comment</a>
+              </div>
+            </div>
           </li>
           <%})%>
           <%}%>
