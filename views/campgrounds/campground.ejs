@@ -108,12 +108,16 @@
           <%if( ejsCampground.comments && ejsCampground.comments.length){%>
           <%ejsCampground.comments.map(comment => {%>
           <li class="list-group-item">
-            <div class="d-flex">
-              <div class="mr-auto">
+            <div class="row">
+              <div class="col-sm-10 text-justify">
                 <%=comment.text%>
               </div>
-              <div class="ml-2">
-                <a href="/campgrounds/<%=ejsCampground.id%>/comments/<%=comment._id%>/edit">Edit Comment</a>
+              <div class="col-sm-2">
+                <small><a href="/campgrounds/<%=ejsCampground.id%>/comments/<%=comment._id%>/edit">Edit </a></small>
+                <form action="/campgrounds/<%=ejsCampground.id%>/comments/<%=comment._id%>?_method=DELETE" method="POST"
+                  class="d-inline-block">
+                  <button class="btn btn-sm">Delete</button>
+                </form>
               </div>
             </div>
           </li>

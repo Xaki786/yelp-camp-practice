@@ -87,13 +87,29 @@ app.put("/campgrounds/:campgroundId", (req, res) => {
 
 //  DELETE CAMPGROUND
 app.delete("/campgrounds/:campgroundId", (req, res) => {
-  Campground.findByIdAndRemove(req.params.campgroundId)
-    .then(() => {
-      res.redirect("/campgrounds");
+  Campground.findById(req.params.campgroundId)
+    .then(dbCampground => {
+      dbCampground.comments.forEach(comment => {
+        Comment.findByIdAndRemove(comment, function(err) {
+          if (err) {
+            console.log(err);
+          }
+        });
+      });
+      dbCampground.save().then(() => {
+        Campground.findByIdAndRemove(req.params.campgroundId).then(() => {
+          res.redirect("/campgrounds");
+        });
+      });
     })
-    .catch(err =>
-      res.status(400).json({ msg: "Campground can not be deleted" })
-    );
+    .catch(err => console.log("Campground Not Found", err));
+  // Campground.findByIdAndRemove(req.params.campgroundId)
+  //   .then(() => {
+  //     res.redirect("/campgrounds");
+  //   })
+  //   .catch(err =>
+  //     res.status(400).json({ msg: "Campground can not be deleted" })
+  //   );
 });
 
 // ===================================================================
@@ -138,6 +154,22 @@ app.put("/campgrounds/:campgroundId/comments/:commentId", (req, res) => {
       res.redirect("/campgrounds/" + req.params.campgroundId);
     })
     .catch(err => console.log("Can not update comment"));
+});
+
+app.delete("/campgrounds/:campgroundId/comments/:commentId", (req, res) => {
+  Campground.findById(req.params.campgroundId)
+    .then(dbCampground => {
+      Comment.findByIdAndRemove(req.params.commentId).then(() => {
+        dbCampground.comments.pull(req.params.commentId);
+        dbCampground
+          .save()
+          .then(() => {
+            res.redirect("/campgrounds/" + req.params.campgroundId);
+          })
+          .catch(err => console.log("Can not add comments"));
+      });
+    })
+    .catch(err => console.log("Can not find campground"));
 });
 //  SERVER STARTUP
 const PORT = process.env.PORT || 3000;
