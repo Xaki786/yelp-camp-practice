@@ -99,8 +99,24 @@ app.delete("/campgrounds/:campgroundId", (req, res) => {
 // ===================================================================
 //  COMMENTS
 // ===================================================================
+app.get("/campgrounds/:campgroundId/comments/new", (req, res) => {
+  res.render("comments/new-comment.ejs", {
+    campgroundId: req.params.campgroundId
+  });
+});
 app.post("/campgrounds/:campgroundId/comments/", (req, res) => {
-  res.send("Hello Add Comment");
+  const comment = req.body.comment;
+  console.log(comment);
+  Campground.findById(req.params.campgroundId)
+    .then(dbCampground => {
+      Comment.create(comment).then(dbComment => {
+        dbCampground.comments.push(dbComment);
+        dbCampground.save().then(() => {
+          res.redirect("/campgrounds/" + req.params.campgroundId);
+        });
+      });
+    })
+    .catch(err => console.log("Campground Not Found"));
 });
 
 //  SERVER STARTUP
