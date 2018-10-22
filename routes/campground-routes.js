@@ -1,6 +1,7 @@
 const router = require("express").Router({ mergeParams: true });
 const Campground = require("../models/Campground.js");
 const Comment = require("../models/Comment.js");
+// const isLoggedIn = require("../middlewares/auth").isLoggedIn;
 
 // =====================================================================
 // @route   GET    /campgrounds
@@ -18,11 +19,18 @@ router.get("/", (req, res) => {
 });
 
 // =====================================================================
+// @route   GET    /campgrounds/new
+// @desc    SHOW NEW CAMPGROUND FORM
+// @access  PROTECTED
+router.get("/new", isLoggedIn, (req, res) => {
+  res.render("./campgrounds/new-campground.ejs");
+});
+// =====================================================================
 // @route   POST    /campgrounds
 // @desc    ADD NEW CAMPGROUND TO THE DATABASE
 // @access  PRIVATE
-// =====================================================================
-router.post("/", (req, res) => {
+
+router.post("/", isLoggedIn, (req, res) => {
   const newCampground = { ...req.body.campground };
   if (newCampground.name === "") {
     return res.status(400).json({ msg: "Campground can not be empty" });
@@ -40,7 +48,7 @@ router.post("/", (req, res) => {
 // @route   GET    /campgrounds/:campgroundId
 // @desc    RETRIEVE SPECIFIC CAMPGROUND FROM DATABASE AND DISPLAY IT
 // @access  PUBLIC
-// =====================================================================
+
 router.get("/:campgroundId", (req, res) => {
   Campground.findById(req.params.campgroundId)
     .populate("comments")
@@ -51,12 +59,28 @@ router.get("/:campgroundId", (req, res) => {
     });
 });
 
+// =====================================================================
+// @route   GET    /campgrounds/:campgroundId/edit
+// @desc    RETRIEVE SPECIFIC CAMPGROUND FROM DATABASE AND DISPLAY CAMPGROUND EDIT FORM
+// @access  PROTECTED
+
+router.get("/:campgroundId/edit", isLoggedIn, (req, res) => {
+  Campground.findById(req.params.campgroundId)
+    .then(dbCampground => {
+      res.render("campgrounds/edit-campground.ejs", {
+        ejsCampground: dbCampground
+      });
+    })
+    .catch(err => {
+      return res.status(400).json({ msg: err.name });
+    });
+});
 // ===========================================================================
 // @route   PUT    /campgrounds/:campgroundId
 // @desc    UPDATE CAMPGROUND IN THE DATABASE AND REDIRECT TO THE SHOW PAGE
 // @access  PRIVATE
-// ===========================================================================
-router.put("/:campgroundId", (req, res) => {
+
+router.put("/:campgroundId", isLoggedIn, (req, res) => {
   const newCampground = { ...req.body.campground };
   Campground.findByIdAndUpdate(req.params.campgroundId, newCampground)
     .then(() => {
@@ -69,8 +93,8 @@ router.put("/:campgroundId", (req, res) => {
 // @route   DELETE    /campgrounds/:campgroundId
 // @desc    DELETE SPECIFIC CAMPGROUND FROM DATABASE AND REDIRECT TO THE CAMPGROUNDS PAGE
 // @access  PUBLIC
-// =============================================================================================
-router.delete("/:campgroundId", (req, res) => {
+
+router.delete("/:campgroundId", isLoggedIn, (req, res) => {
   Campground.findById(req.params.campgroundId)
     .then(dbCampground => {
       dbCampground.comments.forEach(comment => {
@@ -89,4 +113,10 @@ router.delete("/:campgroundId", (req, res) => {
     .catch(err => console.log("Campground Not Found", err));
 });
 
+function isLoggedIn(req, res, next) {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.redirect("/login");
+}
 module.exports = router;
