@@ -1,9 +1,7 @@
 const router = require("express").Router({ mergeParams: true });
 const Campground = require("../models/Campground.js");
 const Comment = require("../models/Comment.js");
-const isLoggedIn = require("../middlewares/auth").isLoggedIn;
-const checkCampgroundOwnership = require("../middlewares/auth")
-  .checkCampgroundOwnership;
+const middleware = require("../middlewares/auth/index.js");
 
 // =====================================================================
 // @route   GET    /campgrounds
@@ -24,7 +22,7 @@ router.get("/", (req, res) => {
 // @route   GET    /campgrounds/new
 // @desc    SHOW NEW CAMPGROUND FORM
 // @access  PROTECTED
-router.get("/new", isLoggedIn, (req, res) => {
+router.get("/new", middleware.isLoggedIn, (req, res) => {
   res.render("./campgrounds/new-campground.ejs");
 });
 // =====================================================================
@@ -32,7 +30,7 @@ router.get("/new", isLoggedIn, (req, res) => {
 // @desc    ADD NEW CAMPGROUND TO THE DATABASE
 // @access  PRIVATE
 
-router.post("/", isLoggedIn, (req, res) => {
+router.post("/", middleware.isLoggedIn, (req, res) => {
   const newCampground = { ...req.body.campground };
   const author = {
     id: req.user._id,
@@ -72,52 +70,66 @@ router.get("/:campgroundId", (req, res) => {
 // @desc    RETRIEVE SPECIFIC CAMPGROUND FROM DATABASE AND DISPLAY CAMPGROUND EDIT FORM
 // @access  PROTECTED
 
-router.get("/:campgroundId/edit", checkCampgroundOwnership, (req, res) => {
-  Campground.findById(req.params.campgroundId)
-    .then(dbCampground => {
-      res.render("campgrounds/edit-campground.ejs", {
-        ejsCampground: dbCampground
+router.get(
+  "/:campgroundId/edit",
+  middleware.checkCampgroundOwnership,
+  (req, res) => {
+    Campground.findById(req.params.campgroundId)
+      .then(dbCampground => {
+        res.render("campgrounds/edit-campground.ejs", {
+          ejsCampground: dbCampground
+        });
+      })
+      .catch(err => {
+        return res.status(400).json({ msg: err.name });
       });
-    })
-    .catch(err => {
-      return res.status(400).json({ msg: err.name });
-    });
-});
+  }
+);
 // ===========================================================================
 // @route   PUT    /campgrounds/:campgroundId
 // @desc    UPDATE CAMPGROUND IN THE DATABASE AND REDIRECT TO THE SHOW PAGE
 // @access  PRIVATE
 
-router.put("/:campgroundId", checkCampgroundOwnership, (req, res) => {
-  const newCampground = { ...req.body.campground };
-  Campground.findByIdAndUpdate(req.params.campgroundId, newCampground)
-    .then(() => {
-      res.redirect("/campgrounds/" + req.params.campgroundId);
-    })
-    .catch(err => res.status(400).json({ msg: "Can not update a campground" }));
-});
+router.put(
+  "/:campgroundId",
+  middleware.checkCampgroundOwnership,
+  (req, res) => {
+    const newCampground = { ...req.body.campground };
+    Campground.findByIdAndUpdate(req.params.campgroundId, newCampground)
+      .then(() => {
+        res.redirect("/campgrounds/" + req.params.campgroundId);
+      })
+      .catch(err =>
+        res.status(400).json({ msg: "Can not update a campground" })
+      );
+  }
+);
 
 // =============================================================================================
 // @route   DELETE    /campgrounds/:campgroundId
 // @desc    DELETE SPECIFIC CAMPGROUND FROM DATABASE AND REDIRECT TO THE CAMPGROUNDS PAGE
 // @access  PUBLIC
 
-router.delete("/:campgroundId", checkCampgroundOwnership, (req, res) => {
-  Campground.findById(req.params.campgroundId)
-    .then(dbCampground => {
-      dbCampground.comments.forEach(comment => {
-        Comment.findByIdAndRemove(comment, function(err) {
-          if (err) {
-            console.log(err);
-          }
+router.delete(
+  "/:campgroundId",
+  middleware.checkCampgroundOwnership,
+  (req, res) => {
+    Campground.findById(req.params.campgroundId)
+      .then(dbCampground => {
+        dbCampground.comments.forEach(comment => {
+          Comment.findByIdAndRemove(comment, function(err) {
+            if (err) {
+              console.log(err);
+            }
+          });
         });
-      });
-      dbCampground.save().then(() => {
-        Campground.findByIdAndRemove(req.params.campgroundId).then(() => {
-          res.redirect("/campgrounds");
+        dbCampground.save().then(() => {
+          Campground.findByIdAndRemove(req.params.campgroundId).then(() => {
+            res.redirect("/campgrounds");
+          });
         });
-      });
-    })
-    .catch(err => console.log("Campground Not Found", err));
-});
+      })
+      .catch(err => console.log("Campground Not Found", err));
+  }
+);
 module.exports = router;

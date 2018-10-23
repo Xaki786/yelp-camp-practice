@@ -1,13 +1,13 @@
 const Campground = require("../models/Campground.js");
 const Comment = require("../models/Comment.js");
 const router = require("express").Router({ mergeParams: true });
-
+const middleware = require("../middlewares/auth");
 // =====================================================================
 // @route   GET    /campgrounds/:campgroundId/comments/new
 // @desc    RETRIEVE DATA FROM DATABASE AND SHOW NEW COMMENT PAGE
 // @access  PROTECTED
 // =====================================================================
-router.get("/new", isLoggedIn, (req, res) => {
+router.get("/new", middleware.isLoggedIn, (req, res) => {
   res.render("comments/new-comment.ejs", {
     campgroundId: req.params.campgroundId
   });
@@ -18,8 +18,13 @@ router.get("/new", isLoggedIn, (req, res) => {
 // @desc    SAVE NEW COMMENT TO THE DATABASE AND REDIRECT TO THE CAMPGROUND SHOW PAGE
 // @access  PRIVATE
 // ===================================================================================
-router.post("/", isLoggedIn, (req, res) => {
+router.post("/", middleware.isLoggedIn, (req, res) => {
   const comment = req.body.comment;
+  const author = {
+    id: req.user.id,
+    name: req.user.username
+  };
+  comment.author = author;
   Campground.findById(req.params.campgroundId)
     .then(dbCampground => {
       Comment.create(comment).then(dbComment => {
@@ -37,7 +42,7 @@ router.post("/", isLoggedIn, (req, res) => {
 // @desc    RETRIEVE COMMENT FROM DATABASE AND SHOW EDIT COMMENT PAGE
 // @access  PROTECTED
 // ===================================================================================
-router.get("/:commentId/edit", isLoggedIn, (req, res) => {
+router.get("/:commentId/edit", middleware.checkCommentOwnership, (req, res) => {
   Comment.findById(req.params.commentId)
     .then(dbComment => {
       res.render("comments/edit-comment.ejs", {
@@ -53,41 +58,44 @@ router.get("/:commentId/edit", isLoggedIn, (req, res) => {
 // @desc    UPDATE COMMENT IN THE DATABASE AND REDIRECT TO THE CAMPGROUND SHOW PAGE
 // @access  PRIVATE
 // ===================================================================================
-router.put("/:commentId", isLoggedIn, (req, res) => {
-  Comment.findByIdAndUpdate(req.params.commentId, {
-    text: req.body.comment.text
-  })
-    .then(() => {
-      res.redirect("/campgrounds/" + req.params.campgroundId);
+router.put(
+  "/:commentId",
+  middleware.isLoggedIn,
+  middleware.checkCommentOwnership,
+  (req, res) => {
+    Comment.findByIdAndUpdate(req.params.commentId, {
+      text: req.body.comment.text
     })
-    .catch(err => console.log("Can not update comment"));
-});
+      .then(() => {
+        res.redirect("/campgrounds/" + req.params.campgroundId);
+      })
+      .catch(err => console.log("Can not update comment"));
+  }
+);
 
 // ===================================================================================
 // @route   DELETE    /campgrounds/:campgroundId/comments/:commentId
 // @desc    DELETE COMMENT FROM DATABASE AND REDIRECT TO THE CAMPGROUND SHOW PAGE
 // @access  PROTECTED
 // ===================================================================================
-router.delete("/:commentId", isLoggedIn, (req, res) => {
-  Campground.findById(req.params.campgroundId)
-    .then(dbCampground => {
-      Comment.findByIdAndRemove(req.params.commentId).then(() => {
-        dbCampground.comments.pull(req.params.commentId);
-        dbCampground
-          .save()
-          .then(() => {
-            res.redirect("/campgrounds/" + req.params.campgroundId);
-          })
-          .catch(err => console.log("Can not add comments"));
-      });
-    })
-    .catch(err => console.log("Can not find campground"));
-});
-
-function isLoggedIn(req, res, next) {
-  if (req.isAuthenticated()) {
-    return next();
+router.delete(
+  "/:commentId",
+  middleware.isLoggedIn,
+  middleware.checkCommentOwnership,
+  (req, res) => {
+    Campground.findById(req.params.campgroundId)
+      .then(dbCampground => {
+        Comment.findByIdAndRemove(req.params.commentId).then(() => {
+          dbCampground.comments.pull(req.params.commentId);
+          dbCampground
+            .save()
+            .then(() => {
+              res.redirect("/campgrounds/" + req.params.campgroundId);
+            })
+            .catch(err => console.log("Can not add comments"));
+        });
+      })
+      .catch(err => console.log("Can not find campground"));
   }
-  res.redirect("/login");
-}
+);
 module.exports = router;
