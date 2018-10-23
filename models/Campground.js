@@ -12,8 +12,11 @@ const campgroundSchema = new mongoose.Schema({
     }
   ],
   author: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User"
+    id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
+    },
+    name: String
   },
   date: {
     type: Date,

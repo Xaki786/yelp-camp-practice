@@ -1,7 +1,9 @@
 const router = require("express").Router({ mergeParams: true });
 const Campground = require("../models/Campground.js");
 const Comment = require("../models/Comment.js");
-// const isLoggedIn = require("../middlewares/auth").isLoggedIn;
+const isLoggedIn = require("../middlewares/auth").isLoggedIn;
+const checkCampgroundOwnership = require("../middlewares/auth")
+  .checkCampgroundOwnership;
 
 // =====================================================================
 // @route   GET    /campgrounds
@@ -32,6 +34,12 @@ router.get("/new", isLoggedIn, (req, res) => {
 
 router.post("/", isLoggedIn, (req, res) => {
   const newCampground = { ...req.body.campground };
+  const author = {
+    id: req.user._id,
+    name: req.user.username
+  };
+  newCampground.author = author;
+
   if (newCampground.name === "") {
     return res.status(400).json({ msg: "Campground can not be empty" });
   }
@@ -64,7 +72,7 @@ router.get("/:campgroundId", (req, res) => {
 // @desc    RETRIEVE SPECIFIC CAMPGROUND FROM DATABASE AND DISPLAY CAMPGROUND EDIT FORM
 // @access  PROTECTED
 
-router.get("/:campgroundId/edit", isLoggedIn, (req, res) => {
+router.get("/:campgroundId/edit", checkCampgroundOwnership, (req, res) => {
   Campground.findById(req.params.campgroundId)
     .then(dbCampground => {
       res.render("campgrounds/edit-campground.ejs", {
@@ -80,7 +88,7 @@ router.get("/:campgroundId/edit", isLoggedIn, (req, res) => {
 // @desc    UPDATE CAMPGROUND IN THE DATABASE AND REDIRECT TO THE SHOW PAGE
 // @access  PRIVATE
 
-router.put("/:campgroundId", isLoggedIn, (req, res) => {
+router.put("/:campgroundId", checkCampgroundOwnership, (req, res) => {
   const newCampground = { ...req.body.campground };
   Campground.findByIdAndUpdate(req.params.campgroundId, newCampground)
     .then(() => {
@@ -94,7 +102,7 @@ router.put("/:campgroundId", isLoggedIn, (req, res) => {
 // @desc    DELETE SPECIFIC CAMPGROUND FROM DATABASE AND REDIRECT TO THE CAMPGROUNDS PAGE
 // @access  PUBLIC
 
-router.delete("/:campgroundId", isLoggedIn, (req, res) => {
+router.delete("/:campgroundId", checkCampgroundOwnership, (req, res) => {
   Campground.findById(req.params.campgroundId)
     .then(dbCampground => {
       dbCampground.comments.forEach(comment => {
@@ -112,11 +120,4 @@ router.delete("/:campgroundId", isLoggedIn, (req, res) => {
     })
     .catch(err => console.log("Campground Not Found", err));
 });
-
-function isLoggedIn(req, res, next) {
-  if (req.isAuthenticated()) {
-    return next();
-  }
-  res.redirect("/login");
-}
 module.exports = router;
