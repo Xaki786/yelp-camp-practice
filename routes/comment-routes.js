@@ -7,7 +7,7 @@ const router = require("express").Router({ mergeParams: true });
 // @desc    RETRIEVE DATA FROM DATABASE AND SHOW NEW COMMENT PAGE
 // @access  PROTECTED
 // =====================================================================
-router.get("/new", (req, res) => {
+router.get("/new", isLoggedIn, (req, res) => {
   res.render("comments/new-comment.ejs", {
     campgroundId: req.params.campgroundId
   });
@@ -18,7 +18,7 @@ router.get("/new", (req, res) => {
 // @desc    SAVE NEW COMMENT TO THE DATABASE AND REDIRECT TO THE CAMPGROUND SHOW PAGE
 // @access  PRIVATE
 // ===================================================================================
-router.post("/", (req, res) => {
+router.post("/", isLoggedIn, (req, res) => {
   const comment = req.body.comment;
   Campground.findById(req.params.campgroundId)
     .then(dbCampground => {
@@ -37,7 +37,7 @@ router.post("/", (req, res) => {
 // @desc    RETRIEVE COMMENT FROM DATABASE AND SHOW EDIT COMMENT PAGE
 // @access  PROTECTED
 // ===================================================================================
-router.get("/:commentId/edit", (req, res) => {
+router.get("/:commentId/edit", isLoggedIn, (req, res) => {
   Comment.findById(req.params.commentId)
     .then(dbComment => {
       res.render("comments/edit-comment.ejs", {
@@ -53,7 +53,7 @@ router.get("/:commentId/edit", (req, res) => {
 // @desc    UPDATE COMMENT IN THE DATABASE AND REDIRECT TO THE CAMPGROUND SHOW PAGE
 // @access  PRIVATE
 // ===================================================================================
-router.put("/:commentId", (req, res) => {
+router.put("/:commentId", isLoggedIn, (req, res) => {
   Comment.findByIdAndUpdate(req.params.commentId, {
     text: req.body.comment.text
   })
@@ -66,9 +66,9 @@ router.put("/:commentId", (req, res) => {
 // ===================================================================================
 // @route   DELETE    /campgrounds/:campgroundId/comments/:commentId
 // @desc    DELETE COMMENT FROM DATABASE AND REDIRECT TO THE CAMPGROUND SHOW PAGE
-// @access  PRIVATE
+// @access  PROTECTED
 // ===================================================================================
-router.delete("/:commentId", (req, res) => {
+router.delete("/:commentId", isLoggedIn, (req, res) => {
   Campground.findById(req.params.campgroundId)
     .then(dbCampground => {
       Comment.findByIdAndRemove(req.params.commentId).then(() => {
@@ -84,4 +84,10 @@ router.delete("/:commentId", (req, res) => {
     .catch(err => console.log("Can not find campground"));
 });
 
+function isLoggedIn(req, res, next) {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.redirect("/login");
+}
 module.exports = router;
